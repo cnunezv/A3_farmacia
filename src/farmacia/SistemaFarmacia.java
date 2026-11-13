@@ -184,4 +184,137 @@ public class SistemaFarmacia {
     public int totalDispensadas() {
         return historialProcesados.tamanio();
     }
+
+    /** Carga cinco fórmulas de ejemplo para no empezar con el sistema vacío. */
+    public void cargarDatosEjemplo() throws Exception {
+        registrar("F-101", "1047382910", "Valentina Ríos", "Acetaminofén 500 mg", 20);
+        registrar("F-102", "73145882", "Jorge Pérez", "Losartán 50 mg", 30);
+        registrar("F-103", "1050963271", "Camila Herrera", "Amoxicilina 500 mg", 21);
+        registrar("F-104", "45528190", "Andrés Salgado", "Metformina 850 mg", 60);
+        registrar("F-105", "30812456", "Beatriz Castro", "Ibuprofeno 400 mg", 10);
+    }
+
+    /* ======================= MENÚ DE CONSOLA ======================= */
+
+    private static final java.util.Scanner ENTRADA = new java.util.Scanner(System.in);
+
+    public static void main(String[] args) {
+        SistemaFarmacia sistema = new SistemaFarmacia();
+        System.out.println("=== FARMACIA - Gestión de fórmulas médicas (Lista, Cola y Pila) ===");
+        String cargar = leer("¿Cargar 5 fórmulas de ejemplo? (s/n): ");
+        if (cargar != null && cargar.trim().equalsIgnoreCase("s")) {
+            try {
+                sistema.cargarDatosEjemplo();
+                System.out.println("Se cargaron 5 fórmulas en la lista general y en la cola de pendientes.");
+            } catch (Exception e) {
+                System.out.println("Error al cargar datos: " + e.getMessage());
+            }
+        }
+
+        boolean continuar = true;
+        while (continuar) {
+            mostrarMenu();
+            String opcion = leer("Opción: ");
+            if (opcion == null) {
+                break;   // no hay más entrada
+            }
+            System.out.println();
+            try {
+                switch (opcion.trim()) {
+                    case "1":
+                        registrarDesdeTeclado(sistema);
+                        break;
+                    case "2":
+                        String orden = leer("¿Mostrar en orden inverso (del último al primero)? (s/n): ");
+                        boolean atras = orden != null && orden.trim().equalsIgnoreCase("s");
+                        System.out.println("--- Lista general (" + (atras ? "del último al primero" : "del primero al último") + ") ---");
+                        System.out.print(sistema.mostrarTodas(atras));
+                        break;
+                    case "3":
+                        System.out.println("--- Cola de pendientes (orden de atención) ---");
+                        System.out.print(sistema.mostrarPendientes());
+                        break;
+                    case "4":
+                        FormulaMedica procesada = sistema.procesarSiguiente();
+                        System.out.println("Dispensada: " + procesada);
+                        System.out.println("Se movió de la cola de pendientes a la cima del historial.");
+                        break;
+                    case "5":
+                        System.out.println("--- Historial de dispensadas (de la más reciente a la más antigua) ---");
+                        System.out.print(sistema.mostrarHistorial());
+                        break;
+                    case "6":
+                        FormulaMedica encontrada = sistema.buscarPorNumero(leer("Número de fórmula a buscar: "));
+                        System.out.println("Encontrada en la posición " + sistema.posicionEnLista(encontrada)
+                                + " de la lista general:");
+                        System.out.println(encontrada);
+                        System.out.println("Ubicación: " + sistema.ubicacion(encontrada));
+                        break;
+                    case "7":
+                        System.out.print(sistema.mostrarPendientes());
+                        FormulaMedica cancelada = sistema.cancelarPendiente(leer("Número de fórmula a cancelar: "));
+                        System.out.println("Cancelada: " + cancelada);
+                        System.out.println("Cola de pendientes después de cancelar:");
+                        System.out.print(sistema.mostrarPendientes());
+                        break;
+                    case "8":
+                        FormulaMedica devuelta = sistema.deshacerUltimoProcesamiento();
+                        System.out.println("Se deshizo la dispensación de: " + devuelta);
+                        System.out.println("Volvió a la cola de pendientes (al final).");
+                        break;
+                    case "9":
+                        System.out.println(sistema.reporte());
+                        break;
+                    case "10":
+                        continuar = false;
+                        break;
+                    default:
+                        System.out.println("Opción no válida. Escriba un número del 1 al 10.");
+                }
+            } catch (Exception e) {
+                System.out.println("ERROR: " + e.getMessage());
+            }
+        }
+        System.out.println("Fin del programa.");
+    }
+
+    private static void mostrarMenu() {
+        System.out.println();
+        System.out.println("================ MENÚ FARMACIA ================");
+        System.out.println(" 1. Registrar fórmula médica");
+        System.out.println(" 2. Ver todas las fórmulas registradas");
+        System.out.println(" 3. Ver fórmulas pendientes");
+        System.out.println(" 4. Dispensar siguiente fórmula");
+        System.out.println(" 5. Ver historial de fórmulas dispensadas");
+        System.out.println(" 6. Buscar fórmula por número");
+        System.out.println(" 7. Cancelar fórmula pendiente");
+        System.out.println(" 8. Deshacer última dispensación");
+        System.out.println(" 9. Ver cantidad de fórmulas");
+        System.out.println("10. Salir");
+    }
+
+    private static void registrarDesdeTeclado(SistemaFarmacia sistema) throws Exception {
+        String numero = leer("Número de fórmula (ej. F-106): ");
+        String documento = leer("Documento del paciente: ");
+        String paciente = leer("Nombre del paciente: ");
+        String medicamento = leer("Medicamento: ");
+        String textoCantidad = leer("Cantidad (unidades): ");
+        int cantidad;
+        try {
+            cantidad = Integer.parseInt(textoCantidad == null ? "" : textoCantidad.trim());
+        } catch (NumberFormatException e) {
+            throw new Exception("La cantidad debe ser un número entero");
+        }
+        FormulaMedica nueva = sistema.registrar(numero, documento, paciente, medicamento, cantidad);
+        System.out.println("Registrada: " + nueva);
+        System.out.println("Se agregó a la lista general y entró al final de la cola de pendientes.");
+    }
+
+    private static String leer(String mensaje) {
+        System.out.print(mensaje);
+        if (!ENTRADA.hasNextLine()) {
+            return null;
+        }
+        return ENTRADA.nextLine();
+    }
 }
