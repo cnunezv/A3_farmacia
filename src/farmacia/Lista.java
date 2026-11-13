@@ -46,6 +46,108 @@ public class Lista {
         cuenta++;
     }
 
+    /** Agrega el dato al principio de la lista. O(1). */
+    public void agregarAlInicio(Object dato) throws Exception {
+        validarDato(dato);
+        Nodo nuevo = new Nodo(dato);
+        if (esVacia()) {
+            primero = nuevo;
+            ultimo = nuevo;
+        } else {
+            nuevo.setDerecha(primero);
+            primero.setIzquierda(nuevo);
+            primero = nuevo;
+        }
+        cuenta++;
+    }
+
+    /**
+     * Inserta el dato para que quede en la posición "indice" (0 .. cuenta).
+     * Los elementos desde esa posición se corren una casilla a la derecha.
+     */
+    public void agregarEnPosicion(int indice, Object dato) throws Exception {
+        validarDato(dato);
+        if (indice < 0 || indice > cuenta) {
+            throw new Exception("La posición " + indice + " está fuera del rango 0 - " + cuenta);
+        }
+        if (indice == 0) {
+            agregarAlInicio(dato);
+            return;
+        }
+        if (indice == cuenta) {
+            agregar(dato);
+            return;
+        }
+        Nodo siguiente = buscar(indice);           // el que hoy ocupa esa posición
+        Nodo anterior = siguiente.getIzquierda();
+        Nodo nuevo = new Nodo(dato);
+        // enlazar: anterior <-> nuevo <-> siguiente
+        nuevo.setIzquierda(anterior);
+        nuevo.setDerecha(siguiente);
+        anterior.setDerecha(nuevo);
+        siguiente.setIzquierda(nuevo);
+        cuenta++;
+    }
+
+    /** Quita y retorna el primer dato. O(1). */
+    public Object eliminarPrimero() throws Exception {
+        if (esVacia()) {
+            throw new Exception("La lista está vacía");
+        }
+        Object dato = primero.getDato();
+        primero = primero.getDerecha();
+        if (primero != null) {
+            primero.setIzquierda(null);   // el nuevo primero ya no tiene anterior
+        } else {
+            ultimo = null;                // la lista quedó vacía
+        }
+        cuenta--;
+        return dato;
+    }
+
+    /** Quita y retorna el último dato. O(1) gracias a la referencia "izquierda". */
+    public Object eliminarUltimo() throws Exception {
+        if (esVacia()) {
+            throw new Exception("La lista está vacía");
+        }
+        Object dato = ultimo.getDato();
+        ultimo = ultimo.getIzquierda();
+        if (ultimo != null) {
+            ultimo.setDerecha(null);
+        } else {
+            primero = null;
+        }
+        cuenta--;
+        return dato;
+    }
+
+    /** Quita y retorna el dato de la posición indicada. */
+    public Object eliminarEnPosicion(int indice) throws Exception {
+        Nodo objetivo = buscar(indice);   // valida vacía y rango
+        if (objetivo == primero) {
+            return eliminarPrimero();
+        }
+        if (objetivo == ultimo) {
+            return eliminarUltimo();
+        }
+        // puentear el nodo: anterior <-> siguiente
+        Nodo anterior = objetivo.getIzquierda();
+        Nodo siguiente = objetivo.getDerecha();
+        anterior.setDerecha(siguiente);
+        siguiente.setIzquierda(anterior);
+        objetivo.setIzquierda(null);
+        objetivo.setDerecha(null);
+        cuenta--;
+        return objetivo.getDato();
+    }
+
+    /** Deja la lista vacía. */
+    public void limpiar() {
+        primero = null;
+        ultimo = null;
+        cuenta = 0;
+    }
+
     /** Dato que está en la posición indicada. */
     public Object buscarDato(int indice) throws Exception {
         return buscar(indice).getDato();
